@@ -93,26 +93,27 @@ let getSchool (aNode:HtmlNode) (state:string) : option<School> =
     let teamId = aNode.AttributeValue("href").Split("/").[2]
     let schoolName = aNode.InnerText()
     
-    let distance = getSchoolDistance teamId
+    try
+        let distance = getSchoolDistance teamId
 
-    let cutoffDistance = TimeSpan.FromHours(1.5)
-    match distance with
-        | x when x < cutoffDistance ->
-            printfn "Getting %s" schoolName
-            let boys = getTeam teamId Gender.Boys
-            let girls = getTeam teamId Gender.Girls
+        let cutoffDistance = TimeSpan.FromHours(2.5)
+        match distance with
+            | x when x < cutoffDistance ->
+                printfn "Getting %s" schoolName
+                let boys = getTeam teamId Gender.Boys
+                let girls = getTeam teamId Gender.Girls
 
-            Some {
-                Name = schoolName
-                State = state
-                Boys = boys
-                Girls = girls
-                DriveTime = distance
-            }
-        | _ -> 
-            printfn "Skipping %s" schoolName
-            None
-
+                Some {
+                    Name = schoolName
+                    State = state
+                    Boys = boys
+                    Girls = girls
+                    DriveTime = distance
+                }
+            | _ -> 
+                printfn "Skipping %s" schoolName
+                None
+    with _ -> None
 
 
 let getRankingsPage (sport: string) (state: string) (pageNum: int) : string = String.Format("http://www.maxpreps.com/rankings/{0}/{1}/state/{2}.htm", sport, pageNum, state)
