@@ -69,6 +69,7 @@ let getSeasonResult (teamId:string) (gender:Gender) (year:int) : option<SeasonRe
                     }
     with
         | :? WebException -> None
+        | :? Exception -> None
 
 let getTeam (teamId:string) gender =
     let results = years
@@ -88,21 +89,30 @@ let getSchoolDistance (teamId:string) : TimeSpan =
     TimeSpan.FromSeconds(float seconds)
     
 
-let getSchool (aNode:HtmlNode) (state:string) : School=
+let getSchool (aNode:HtmlNode) (state:string) : option<School> =
     let teamId = aNode.AttributeValue("href").Split("/").[2]
     let schoolName = aNode.InnerText()
-
-    let boys = getTeam teamId Gender.Boys
-    let girls = getTeam teamId Gender.Girls
+    
     let distance = getSchoolDistance teamId
 
-    {
-        Name = schoolName
-        State = state
-        Boys = boys
-        Girls = girls
-        DriveTime = distance
-    }
+    let cutoffDistance = TimeSpan.FromHours(1.5)
+    match distance with
+        | x when x < cutoffDistance ->
+            printfn "Getting %s" schoolName
+            let boys = getTeam teamId Gender.Boys
+            let girls = getTeam teamId Gender.Girls
+
+            Some {
+                Name = schoolName
+                State = state
+                Boys = boys
+                Girls = girls
+                DriveTime = distance
+            }
+        | _ -> 
+            printfn "Skipping %s" schoolName
+            None
+
 
 
 let getRankingsPage (sport: string) (state: string) (pageNum: int) : string = String.Format("http://www.maxpreps.com/rankings/{0}/{1}/state/{2}.htm", sport, pageNum, state)
@@ -115,11 +125,14 @@ let getTeams (state:string) =
         |> Seq.map (fun page -> page.Tables.Html.CssSelect("tbody a"))
         |> Seq.takeWhile (fun pageResults -> Seq.length pageResults <> 0)
         |> Seq.collect (fun x -> x)
+        |> Seq.sortBy (fun a -> a.InnerText())
         |> Seq.map (fun a -> getSchool a state)
+        |> Seq.where (fun a -> a.IsSome)
+        |> Seq.map (fun a -> a.Value)
 
 let allSchools = states 
                         |> Seq.collect getTeams
-                        //|> Seq.take 2
+                        //|> Seq.take 10
                         |> Seq.toArray
 
 let schoolCount = Seq.length(allSchools)
