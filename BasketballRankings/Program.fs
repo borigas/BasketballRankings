@@ -15,7 +15,7 @@ type SeasonResult = {
     Year : int
 }
 type Team = {
-    Seasons : SeasonResult[]
+    Seasons : option<SeasonResult>[]
     //SizeClass : string
     Gender : Gender
 }
@@ -52,17 +52,20 @@ let getTeamRankingsPageUrl (teamId:string) (gender:Gender) (year:int) : string =
     let seasonSportName = sport + season
     String.Format("http://www.maxpreps.com/high-schools/{0}/{1}/rankings.htm", teamId, seasonSportName)
 
-let getSeasonResult (teamId:string) (gender:Gender) (year:int) : SeasonResult =
+let getSeasonResult (teamId:string) (gender:Gender) (year:int) : option<SeasonResult> =
     let pageUrl = getTeamRankingsPageUrl teamId gender year
     let resultsPage = MaxPrepsTeamRankingPage.Load(pageUrl)
     let rowItems = resultsPage.DefinitionLists.Html.CssSelect("dl#ctl00_NavigationWithContentOverRelated_ContentOverRelated_PageHeader_TeamRecord dd")
-    let seasonResult = {
-        Record = rowItems.[0].InnerText()
-        NationalRanking = rowItems.[2].InnerText() |> int
-        StateRanking = rowItems.[3].InnerText() |> int
-        Year = year
-    }
-    seasonResult
+
+    let result = match rowItems with
+        | [] -> None
+        | _ -> Some {
+                    Record = rowItems.[0].InnerText()
+                    NationalRanking = rowItems.[2].InnerText() |> int
+                    StateRanking = rowItems.[3].InnerText() |> int
+                    Year = year
+                }
+    result
 
 let getTeam (teamId:string) gender =
     let results = years
@@ -113,7 +116,7 @@ let getTeams (state:string) =
 
 let allSchools = states 
                         |> Seq.collect getTeams
-                        |> Seq.take 2
+                        //|> Seq.take 2
                         |> Seq.toArray
 
 let schoolCount = Seq.length(allSchools)
@@ -122,7 +125,9 @@ printfn "All schools: %i" schoolCount
 
 let teamResultsString (team:Team) : string =
     let seasonRankings = team.Seasons 
-                            |> Seq.map (fun s -> String.Format("{0}, {1}", s.Record, s.NationalRanking.ToString()))
+                            |> Seq.map (fun s -> match s with
+                                                    | Some i -> String.Format("{0}, {1}", i.Record, i.NationalRanking.ToString())
+                                                    | None -> " , ,")
     String.Join(", ", seasonRankings)
 
 let toCsv (schools: School[]) =
