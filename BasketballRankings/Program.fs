@@ -22,7 +22,7 @@ type Team = {
 type School = {
     Name : string
     State : string
-    //DriveTime : TimeSpan
+    DriveTime : TimeSpan
     Boys : Team
     Girls : Team
 }
@@ -73,18 +73,29 @@ let getTeam (teamId:string) gender =
         Gender = gender
     }
 
+type MapQuestDistanceResult = JsonProvider<"https://www.mapquestapi.com/directions/v2/route?key=LkN9DI5p6PB0cXLTLqbm1ykPAjICEJJV&from=College+View+Academy+Lincoln+NE&to=Omaha+NE&outFormat=json&ambiguities=ignore&routeType=fastest&doReverseGeocode=false&enhancedNarrative=false&avoidTimedConditions=false">
+let getMapQuestDirectionsUrl (teamId:string) : string = String.Format("https://www.mapquestapi.com/directions/v2/route?key=LkN9DI5p6PB0cXLTLqbm1ykPAjICEJJV&from=College+View+Academy+Lincoln+NE&to={0}&outFormat=json&ambiguities=ignore&routeType=fastest&doReverseGeocode=false&enhancedNarrative=false&avoidTimedConditions=false", teamId.Replace("-", "+"))
+let getSchoolDistance (teamId:string) : TimeSpan = 
+    let url = getMapQuestDirectionsUrl teamId
+    let results = MapQuestDistanceResult.Load(url)
+    let seconds = results.Route.Time
+    TimeSpan.FromSeconds(float seconds)
+    
+
 let getSchool (aNode:HtmlNode) (state:string) : School=
     let teamId = aNode.AttributeValue("href").Split("/").[2]
     let schoolName = aNode.InnerText()
 
     let boys = getTeam teamId Gender.Boys
     let girls = getTeam teamId Gender.Girls
+    let distance = getSchoolDistance teamId
 
     {
         Name = schoolName
         State = state
         Boys = boys
         Girls = girls
+        DriveTime = distance
     }
 
 
