@@ -26,6 +26,7 @@ type School = {
     DriveTime : TimeSpan
     Boys : Team
     Girls : Team
+    TeamUrl : string
 }
 let genderToSportName gender =
     match gender with
@@ -90,7 +91,9 @@ let getSchoolDistance (teamId:string) : TimeSpan =
     
 
 let getSchool (aNode:HtmlNode) (state:string) : option<School> =
-    let teamId = aNode.AttributeValue("href").Split("/").[2]
+    let teamUrl = aNode.AttributeValue("href")
+    let fullLink = "https://www.maxpreps.com" + teamUrl
+    let teamId = teamUrl.Split("/").[2]
     let schoolName = aNode.InnerText()
     
     try
@@ -109,6 +112,7 @@ let getSchool (aNode:HtmlNode) (state:string) : option<School> =
                     Boys = boys
                     Girls = girls
                     DriveTime = distance
+                    TeamUrl = fullLink
                 }
             | _ -> 
                 printfn "Skipping %s" schoolName
@@ -143,18 +147,18 @@ printfn "All schools: %i" schoolCount
 let teamResultsString (team:Team) : string =
     let seasonRankings = team.Seasons 
                             |> Seq.map (fun s -> match s with
-                                                    | Some i -> String.Format("{0}, {1}", i.Record, i.NationalRanking.ToString())
-                                                    | None -> " , ,")
-    String.Join(", ", seasonRankings)
+                                                    | Some i -> String.Format("\"{0}\",{1}", i.Record, i.NationalRanking.ToString())
+                                                    | None -> " ,")
+    String.Join(",", seasonRankings)
 
 let toCsv (schools: School[]) =
-    let header = ", , Boys, , , , , , , , , Girls\r\n"
-                + "Team, Distance, Avg, 17-18, , 16-17, , 15-16, , 14-15, , Avg, 17-18, , 16-17, , 15-16, , 14-15\r\n"
-                + ", , , Record, Rank, Record, Rank, Record, Rank, Record, Rank, , Record, Rank, Record, Rank, Record, Rank, Record, Rank"
+    let header = ",,,Boys,,,,,,,,,Girls" + Environment.NewLine
+                + "Team,Link,Distance,Avg,17-18,,16-17,,15-16,,14-15,,Avg,17-18,,16-17,,15-16,,14-15" + Environment.NewLine
+                + ",,,,Record,Rank,Record,Rank,Record,Rank,Record,Rank,,Record,Rank,Record,Rank,Record,Rank,Record,Rank"
     let rows = schools
-                |> Seq.map (fun school -> String.Format("{0}, {1}, , {2}, , {3}", school.Name, school.DriveTime.TotalMinutes, teamResultsString(school.Boys), teamResultsString(school.Girls)))
-    let body = String.Join("\r\n", rows)
-    let doc = header + "\r\n" + body
+                |> Seq.map (fun school -> String.Format("{0},\"{4}\",{1},,{2},,{3}", school.Name, school.DriveTime.TotalMinutes, teamResultsString(school.Boys), teamResultsString(school.Girls), school.TeamUrl))
+    let body = String.Join(Environment.NewLine, rows)
+    let doc = header + Environment.NewLine + body
     doc
 
 let result = toCsv allSchools
