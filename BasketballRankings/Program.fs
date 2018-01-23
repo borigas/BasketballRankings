@@ -2,6 +2,7 @@
 
 open System
 open FSharp.Data
+open System.Net
 
 
 
@@ -54,18 +55,20 @@ let getTeamRankingsPageUrl (teamId:string) (gender:Gender) (year:int) : string =
 
 let getSeasonResult (teamId:string) (gender:Gender) (year:int) : option<SeasonResult> =
     let pageUrl = getTeamRankingsPageUrl teamId gender year
-    let resultsPage = MaxPrepsTeamRankingPage.Load(pageUrl)
-    let rowItems = resultsPage.DefinitionLists.Html.CssSelect("dl#ctl00_NavigationWithContentOverRelated_ContentOverRelated_PageHeader_TeamRecord dd")
+    try
+        let resultsPage = MaxPrepsTeamRankingPage.Load(pageUrl)
+        let rowItems = resultsPage.DefinitionLists.Html.CssSelect("dl#ctl00_NavigationWithContentOverRelated_ContentOverRelated_PageHeader_TeamRecord dd")
 
-    let result = match rowItems with
-        | [] -> None
-        | _ -> Some {
-                    Record = rowItems.[0].InnerText()
-                    NationalRanking = rowItems.[2].InnerText() |> int
-                    StateRanking = rowItems.[3].InnerText() |> int
-                    Year = year
-                }
-    result
+        match rowItems with
+            | [] -> None
+            | _ -> Some {
+                        Record = rowItems.[0].InnerText()
+                        NationalRanking = rowItems.[2].InnerText() |> int
+                        StateRanking = rowItems.[3].InnerText() |> int
+                        Year = year
+                    }
+    with
+        | :? WebException -> None
 
 let getTeam (teamId:string) gender =
     let results = years
