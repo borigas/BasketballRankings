@@ -147,7 +147,7 @@ printfn "All schools: %i" schoolCount
 let teamResultsString (team:Team) : string =
     let seasonRankings = team.Seasons 
                             |> Seq.map (fun s -> match s with
-                                                    | Some i -> String.Format("\"{0}\",{1}", i.Record, i.NationalRanking.ToString())
+                                                    | Some i -> String.Format("=\"{0}\",{1}", i.Record, i.NationalRanking.ToString())
                                                     | None -> " ,")
     String.Join(",", seasonRankings)
 
