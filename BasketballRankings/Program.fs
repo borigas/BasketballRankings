@@ -111,14 +111,34 @@ let getTeams (state:string) =
         |> Seq.collect (fun x -> x)
         |> Seq.map (fun a -> getSchool a state)
 
-let allSchoolNames = states 
+let allSchools = states 
                         |> Seq.collect getTeams
                         |> Seq.take 2
                         |> Seq.toArray
 
-let schoolCount = Seq.length(allSchoolNames)
-printfn "%A" allSchoolNames
+let schoolCount = Seq.length(allSchools)
+printfn "%A" allSchools
 printfn "All schools: %i" schoolCount
+
+let teamResultsString (team:Team) : string =
+    let seasonRankings = team.Seasons 
+                            |> Seq.map (fun s -> String.Format("{0}, {1}", s.Record, s.NationalRanking.ToString()))
+    String.Join(", ", seasonRankings)
+
+let toCsv (schools: School[]) =
+    let header = ", , Boys, , , , , , , , , Girls\r\n"
+                + "Team, Distance, Avg, 17-18, , 16-17, , 15-16, , 14-15, , Avg, 17-18, , 16-17, , 15-16, , 14-15\r\n"
+                + ", , , Record, Rank, Record, Rank, Record, Rank, Record, Rank, , Record, Rank, Record, Rank, Record, Rank, Record, Rank"
+    let rows = schools
+                |> Seq.map (fun school -> String.Format("{0}, {1}, , {2}, , {3}", school.Name, school.DriveTime.TotalMinutes, teamResultsString(school.Boys), teamResultsString(school.Girls)))
+    let body = String.Join("\r\n", rows)
+    let doc = header + "\r\n" + body
+    doc
+
+let result = toCsv allSchools
+printfn "%s" result
+
+System.IO.File.WriteAllText("output.csv", result)
 
 printfn "Done"
 
