@@ -152,11 +152,11 @@ let teamResultsString (team:Team) : string =
     String.Join(",", seasonRankings)
 
 let toCsv (schools: School[]) =
-    let header = ",,,Boys,,,,,,,,,Girls" + Environment.NewLine
-                + "Team,Link,Distance,Avg,17-18,,16-17,,15-16,,14-15,,Avg,17-18,,16-17,,15-16,,14-15" + Environment.NewLine
-                + ",,,,Record,Rank,Record,Rank,Record,Rank,Record,Rank,,Record,Rank,Record,Rank,Record,Rank,Record,Rank"
+    let header = ",,,,Boys,,,,,,,Girls" + Environment.NewLine
+                + "Team,Link,Distance,BoysAvg,GirlsAvg,17-18,,16-17,,15-16,,14-15,,17-18,,16-17,,15-16,,14-15" + Environment.NewLine
+                + ",,,,,Record,Rank,Record,Rank,Record,Rank,Record,Rank,Record,Rank,Record,Rank,Record,Rank,Record,Rank"
     let rows = schools
-                |> Seq.map (fun school -> String.Format("{0},\"{4}\",{1},,{2},,{3}", school.Name, school.DriveTime.TotalMinutes, teamResultsString(school.Boys), teamResultsString(school.Girls), school.TeamUrl))
+                |> Seq.map (fun school -> String.Format("{0},\"{4}\",{1},,,{2},{3}", school.Name, school.DriveTime.TotalMinutes, teamResultsString(school.Boys), teamResultsString(school.Girls), school.TeamUrl))
     let body = String.Join(Environment.NewLine, rows)
     let doc = header + Environment.NewLine + body
     doc
